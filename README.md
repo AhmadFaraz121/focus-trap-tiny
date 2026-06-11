@@ -7,6 +7,8 @@ Uses native browser APIs — no polyfills, no bloat.
 [![license](https://img.shields.io/npm/l/focus-trap-tiny)](./LICENSE)
 [![gzip size](https://img.shields.io/bundlephobia/minzip/focus-trap-tiny)](https://bundlephobia.com/package/focus-trap-tiny)
 
+**[▶ Live Demo](https://ahmadfaraz121.github.io/focus-trap-tiny/)**
+
 ---
 
 ## Why?
