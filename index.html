@@ -381,13 +381,29 @@
       outline: 2px solid var(--accent);
       outline-offset: 2px;
     }
+
+    kbd {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+    }
+
+    .btn-warn {
+      background: transparent;
+      color: var(--red);
+      border: 1px solid var(--red);
+    }
+    .btn-warn:hover { background: rgba(248,113,113,0.12); }
   </style>
 </head>
 <body>
 
 <header>
   <div class="badge">⚡ Zero dependencies</div>
-  <h1>focus-trap-<span>lite</span></h1>
+  <h1>focus-trap-<span>tiny</span></h1>
   <p class="subtitle">Trap keyboard focus inside modals and dialogs using only native browser APIs. No polyfills. No bloat.</p>
 
   <div class="install-box" onclick="copyInstall(this)">
@@ -405,7 +421,7 @@
       <span class="stat-label">dependencies</span>
     </div>
     <div class="stat">
-      <span class="stat-val">ES2020+</span>
+      <span class="stat-val">ES2019</span>
       <span class="stat-label">target</span>
     </div>
     <div class="stat">
@@ -419,12 +435,17 @@
 
   <p class="section-title">// live demo</p>
   <div class="demo-area">
-    <p class="demo-desc">Open a modal and try pressing <kbd style="background:var(--surface2);border:1px solid var(--border);padding:2px 6px;border-radius:4px;font-family:var(--font-mono);font-size:0.8rem">Tab</kbd> — focus stays trapped inside. Press <kbd style="background:var(--surface2);border:1px solid var(--border);padding:2px 6px;border-radius:4px;font-family:var(--font-mono);font-size:0.8rem">Esc</kbd> or click Close to return focus to the trigger button.</p>
+    <p class="demo-desc">Open a modal and press <kbd>Tab</kbd> — focus stays trapped inside. Press <kbd>Esc</kbd> or click Close to return focus to the trigger. The live focus log below tracks where focus is at all times. Each button shows off a different <code style="font-family:var(--font-mono);font-size:0.8rem">v1.1</code> feature:</p>
     <div class="demo-buttons">
       <button class="btn btn-primary" id="open-modal-btn" onclick="openModal()">Open Modal</button>
-      <button class="btn btn-ghost" tabindex="0">Focusable outside</button>
-      <button class="btn btn-ghost" tabindex="0">Also focusable</button>
+      <button class="btn btn-ghost" id="open-email-btn" onclick="openModalFocusEmail()">Open → focus Email</button>
+      <button class="btn btn-ghost" id="open-alert-btn" onclick="openAlert()">Open empty dialog</button>
     </div>
+    <p class="demo-desc" style="margin:16px 0 0;font-size:0.8rem;">
+      <strong style="color:var(--text)">Open Modal</strong> focuses the first field ·
+      <strong style="color:var(--text)">focus Email</strong> jumps straight to the email input (<code style="font-family:var(--font-mono)">initialFocus</code>) ·
+      <strong style="color:var(--text)">empty dialog</strong> has no focusable children, so focus falls back to the dialog itself (<code style="font-family:var(--font-mono)">fallbackFocus</code>).
+    </p>
     <div class="focus-log" id="focus-log">
       <span class="log-label">focus →</span> waiting for interaction...
     </div>
@@ -436,6 +457,9 @@
 
 <span class="kw">const</span> modal = document.<span class="fn">getElementById</span>(<span class="str">'my-modal'</span>);
 <span class="kw">const</span> trap = <span class="fn">createFocusTrap</span>(modal, {
+  initialFocus: <span class="str">'#email'</span>,    <span class="cm">// selector, element, fn, or true/false</span>
+  returnFocus: triggerBtn,    <span class="cm">// where focus goes on close</span>
+  fallbackFocus: modal,       <span class="cm">// used when nothing is focusable</span>
   onEscape: () => <span class="fn">closeModal</span>(),
 });
 
@@ -461,8 +485,22 @@ trap.<span class="fn">update</span>();</pre>
     <div class="feature">
       <span class="feature-icon">🔙</span>
       <div>
-        <h3>Return Focus</h3>
-        <p>Automatically restores focus to the trigger element when deactivated.</p>
+        <h3>Configurable focus</h3>
+        <p>Target initial &amp; return focus by selector, element, or function — restores the trigger by default.</p>
+      </div>
+    </div>
+    <div class="feature">
+      <span class="feature-icon">🛡️</span>
+      <div>
+        <h3>Escape guard</h3>
+        <p>Catches focus that slips out via mouse click or programmatic <code style="font-family:var(--font-mono);font-size:0.78rem">focus()</code>, not just Tab.</p>
+      </div>
+    </div>
+    <div class="feature">
+      <span class="feature-icon">🪂</span>
+      <div>
+        <h3>Fallback focus</h3>
+        <p>Empty dialog? Focus falls back to the container so it&apos;s never lost outside the trap.</p>
       </div>
     </div>
     <div class="feature">
@@ -505,15 +543,15 @@ trap.<span class="fn">update</span>();</pre>
     <div class="modal-form">
       <div class="field">
         <label>Name</label>
-        <input type="text" placeholder="e.g. Ada Lovelace" />
+        <input id="modal-name" type="text" placeholder="e.g. Ada Lovelace" />
       </div>
       <div class="field">
         <label>Email</label>
-        <input type="email" placeholder="ada@babbage.dev" />
+        <input id="modal-email" type="email" placeholder="ada@babbage.dev" />
       </div>
       <div class="field">
         <label>Role</label>
-        <select>
+        <select id="modal-role">
           <option>Frontend Developer</option>
           <option>Full-Stack Engineer</option>
           <option>Accessibility Engineer</option>
@@ -521,10 +559,26 @@ trap.<span class="fn">update</span>();</pre>
         </select>
       </div>
     </div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal()">Close</button>
-      <button class="btn btn-primary" onclick="closeModal()">Confirm</button>
+    <p style="font-size:0.78rem;color:var(--muted);margin-bottom:14px;">
+      The button below tries to <code style="font-family:var(--font-mono)">.focus()</code> the trigger
+      <em>outside</em> the modal. Watch the focus log — the escape guard yanks it right back inside.
+    </p>
+    <div class="modal-actions" style="justify-content:space-between;">
+      <button class="btn btn-warn" onclick="stealFocus()">Try to steal focus →</button>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-ghost" onclick="closeModal()">Close</button>
+        <button class="btn btn-primary" onclick="closeModal()">Confirm</button>
+      </div>
     </div>
+  </div>
+</div>
+
+<!-- Empty dialog (no focusable children → fallbackFocus) -->
+<div class="modal-overlay" id="alert-overlay" role="alertdialog" aria-modal="true" aria-labelledby="alert-title" onclick="if(event.target===this)closeAlert()">
+  <div class="modal" id="alert-modal" style="text-align:center;">
+    <h2 id="alert-title">📭 Nothing focusable in here</h2>
+    <p style="margin-bottom:8px;">This dialog has no buttons, links, or inputs. Instead of leaving focus stranded outside, the trap focuses the dialog container itself (it temporarily gets <code style="font-family:var(--font-mono)">tabindex="-1"</code>) — check the focus log.</p>
+    <p style="font-size:0.8rem;">Press <kbd>Esc</kbd> or click the backdrop to close.</p>
   </div>
 </div>
 
@@ -532,7 +586,7 @@ trap.<span class="fn">update</span>();</pre>
 <div class="toast" id="toast"></div>
 
 <script type="module">
-  // ── Inline the library (no build step for demo) ──
+  // ── Inline the library (v1.1, mirrors src/index.js — no build step for the demo) ──
   const FOCUSABLE_SELECTORS = [
     'a[href]',
     'button:not([disabled])',
@@ -541,16 +595,51 @@ trap.<span class="fn">update</span>();</pre>
     'textarea:not([disabled])',
     '[tabindex]:not([tabindex="-1"])',
     'details > summary',
+    'audio[controls]',
+    'video[controls]',
   ].join(', ');
 
   function createFocusTrap(container, options = {}) {
-    const { initialFocus = true, returnFocus = true, onEscape = null } = options;
-    let isActive = false, previouslyFocused = null, focusableElements = [];
+    const {
+      initialFocus = true,
+      returnFocus = true,
+      fallbackFocus = null,
+      onEscape = null,
+    } = options;
+
+    let isActive = false, previouslyFocused = null, focusableElements = [], addedTabindex = false;
+
+    const isVisible = (el) => {
+      const s = getComputedStyle(el);
+      return s.display !== 'none' && s.visibility !== 'hidden';
+    };
 
     function getFocusableElements() {
-      return Array.from(container.querySelectorAll(FOCUSABLE_SELECTORS)).filter(
-        el => !el.closest('[inert]') && getComputedStyle(el).display !== 'none'
-      );
+      return Array.from(container.querySelectorAll(FOCUSABLE_SELECTORS))
+        .filter(el => !el.closest('[inert]') && isVisible(el));
+    }
+
+    function resolveTarget(target, root = container) {
+      if (typeof target === 'function') target = target();
+      if (typeof target === 'string') return root.querySelector(target);
+      if (target && typeof target.focus === 'function') return target;
+      return null;
+    }
+
+    function getFallbackTarget() {
+      const resolved = resolveTarget(fallbackFocus);
+      if (resolved) return resolved;
+      if (!container.hasAttribute('tabindex')) {
+        container.setAttribute('tabindex', '-1');
+        addedTabindex = true;
+      }
+      return container;
+    }
+
+    function getInitialFocusTarget() {
+      if (initialFocus === false) return null;
+      if (initialFocus === true) return focusableElements[0] || getFallbackTarget();
+      return resolveTarget(initialFocus) || focusableElements[0] || getFallbackTarget();
     }
 
     function handleKeyDown(e) {
@@ -568,6 +657,15 @@ trap.<span class="fn">update</span>();</pre>
       }
     }
 
+    // Pull focus back inside if it escapes via mouse click or programmatic focus().
+    function handleFocusIn(e) {
+      if (!isActive || container.contains(e.target)) return;
+      e.stopImmediatePropagation();
+      focusableElements = getFocusableElements();
+      const target = focusableElements[0] || getFallbackTarget();
+      if (target && target.focus) target.focus();
+    }
+
     return {
       activate() {
         if (isActive) return;
@@ -575,13 +673,20 @@ trap.<span class="fn">update</span>();</pre>
         previouslyFocused = document.activeElement;
         focusableElements = getFocusableElements();
         document.addEventListener('keydown', handleKeyDown);
-        if (initialFocus && focusableElements.length) focusableElements[0].focus();
+        document.addEventListener('focusin', handleFocusIn);
+        const target = getInitialFocusTarget();
+        if (target && target.focus) target.focus();
       },
       deactivate() {
         if (!isActive) return;
         isActive = false;
         document.removeEventListener('keydown', handleKeyDown);
-        if (returnFocus && previouslyFocused?.focus) previouslyFocused.focus();
+        document.removeEventListener('focusin', handleFocusIn);
+        if (addedTabindex) { container.removeAttribute('tabindex'); addedTabindex = false; }
+        let t = null;
+        if (returnFocus === true) t = previouslyFocused;
+        else if (returnFocus !== false) t = resolveTarget(returnFocus, document);
+        if (t && t.focus) t.focus();
       },
       update() { focusableElements = getFocusableElements(); }
     };
@@ -590,28 +695,52 @@ trap.<span class="fn">update</span>();</pre>
   // ── Demo logic ──
   const overlay = document.getElementById('modal-overlay');
   const modal = document.getElementById('modal');
+  const alertOverlay = document.getElementById('alert-overlay');
+  const alertModal = document.getElementById('alert-modal');
   const log = document.getElementById('focus-log');
 
-  const trap = createFocusTrap(modal, {
-    onEscape: () => closeModal(),
-  });
+  let trap = null;        // form-modal trap (re-created per open so we can vary options)
+  let alertTrap = null;   // empty-dialog trap
 
-  // Focus tracking
+  // Focus tracking — note: this listener runs AFTER the trap's guard, so it
+  // reports the corrected focus position when the guard pulls focus back in.
   document.addEventListener('focusin', (e) => {
-    const tag = e.target.tagName.toLowerCase();
+    const tag = e.target.tagName ? e.target.tagName.toLowerCase() : '?';
     const id = e.target.id ? `#${e.target.id}` : '';
     const type = e.target.type ? `[${e.target.type}]` : '';
     log.innerHTML = `<span class="log-label">focus →</span> &lt;${tag}${id}${type}&gt;`;
   });
 
-  window.openModal = function() {
+  function openFormModal(opts) {
     overlay.classList.add('open');
+    trap = createFocusTrap(modal, { ...opts, onEscape: () => closeModal() });
     trap.activate();
-  };
+  }
+
+  window.openModal = () => openFormModal();                          // initialFocus: first field
+  window.openModalFocusEmail = () => openFormModal({ initialFocus: '#modal-email' });
 
   window.closeModal = function() {
     overlay.classList.remove('open');
-    trap.deactivate();
+    if (trap) trap.deactivate();
+  };
+
+  // Escape-guard demo: try to move focus to a button outside the trap.
+  window.stealFocus = function() {
+    document.getElementById('open-modal-btn').focus();
+    // The guard fires synchronously and bounces focus back inside the modal.
+  };
+
+  // fallbackFocus demo: a dialog with zero focusable children.
+  window.openAlert = function() {
+    alertOverlay.classList.add('open');
+    alertTrap = createFocusTrap(alertModal, { onEscape: () => closeAlert() });
+    alertTrap.activate();
+  };
+
+  window.closeAlert = function() {
+    alertOverlay.classList.remove('open');
+    if (alertTrap) alertTrap.deactivate();
   };
 
   // Copy install command

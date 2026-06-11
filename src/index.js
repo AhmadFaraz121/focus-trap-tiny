@@ -17,13 +17,23 @@ const FOCUSABLE_SELECTORS = [
 ].join(', ');
 
 /**
+ * @typedef {string | HTMLElement | (() => (HTMLElement | null))} FocusTarget
+ */
+
+/**
  * Creates a focus trap on a given container element.
  *
  * @param {HTMLElement} container - The element to trap focus within.
  * @param {Object} [options]
- * @param {boolean} [options.initialFocus=true] - Auto-focus the first focusable element on activation.
- * @param {boolean} [options.returnFocus=true] - Return focus to the previously focused element on deactivation.
- * @param {Function} [options.onEscape] - Callback when Escape key is pressed.
+ * @param {boolean | FocusTarget} [options.initialFocus=true] - Where to send focus on activation.
+ *   `true` focuses the first focusable element, `false` focuses nothing, or pass a
+ *   selector / element / function to target a specific element.
+ * @param {boolean | FocusTarget} [options.returnFocus=true] - Where to send focus on deactivation.
+ *   `true` restores the previously focused element, `false` does nothing, or pass a
+ *   selector / element / function to target a specific element.
+ * @param {FocusTarget} [options.fallbackFocus] - Element to focus when the container has no
+ *   focusable children. Defaults to the container itself (made programmatically focusable).
+ * @param {Function} [options.onEscape] - Callback when the Escape key is pressed.
  * @returns {{ activate: Function, deactivate: Function, update: Function }}
  */
 function createFocusTrap(container, options = {}) {
@@ -34,12 +44,14 @@ function createFocusTrap(container, options = {}) {
   const {
     initialFocus = true,
     returnFocus = true,
+    fallbackFocus = null,
     onEscape = null,
   } = options;
 
   let isActive = false;
   let previouslyFocused = null;
   let focusableElements = [];
+  let addedTabindex = false;
 
   function isVisible(el) {
     const style = getComputedStyle(el);
@@ -50,6 +62,35 @@ function createFocusTrap(container, options = {}) {
     return Array.from(container.querySelectorAll(FOCUSABLE_SELECTORS)).filter(
       (el) => !el.closest('[inert]') && isVisible(el)
     );
+  }
+
+  /**
+   * Resolve a FocusTarget (selector | element | function) to an element, or null.
+   * Selectors resolve within `root` (the container for initial/fallback focus, the
+   * document for return focus, which usually targets the trigger outside the modal).
+   */
+  function resolveTarget(target, root = container) {
+    if (typeof target === 'function') target = target();
+    if (typeof target === 'string') return root.querySelector(target);
+    if (target && typeof target.focus === 'function') return target;
+    return null;
+  }
+
+  /** The element to fall back to when nothing focusable exists: option, else the container. */
+  function getFallbackTarget() {
+    const resolved = resolveTarget(fallbackFocus);
+    if (resolved) return resolved;
+    if (!container.hasAttribute('tabindex')) {
+      container.setAttribute('tabindex', '-1');
+      addedTabindex = true;
+    }
+    return container;
+  }
+
+  function getInitialFocusTarget() {
+    if (initialFocus === false) return null;
+    if (initialFocus === true) return focusableElements[0] || getFallbackTarget();
+    return resolveTarget(initialFocus) || focusableElements[0] || getFallbackTarget();
   }
 
   function handleKeyDown(e) {
@@ -87,6 +128,15 @@ function createFocusTrap(container, options = {}) {
     }
   }
 
+  /** Pull focus back inside if it escapes via mouse click or a programmatic focus(). */
+  function handleFocusIn(e) {
+    if (!isActive || container.contains(e.target)) return;
+    e.stopImmediatePropagation();
+    focusableElements = getFocusableElements();
+    const target = focusableElements[0] || getFallbackTarget();
+    if (target && typeof target.focus === 'function') target.focus();
+  }
+
   function activate() {
     if (isActive) return;
     isActive = true;
@@ -95,10 +145,10 @@ function createFocusTrap(container, options = {}) {
     focusableElements = getFocusableElements();
 
     document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('focusin', handleFocusIn);
 
-    if (initialFocus && focusableElements.length > 0) {
-      focusableElements[0].focus();
-    }
+    const target = getInitialFocusTarget();
+    if (target && typeof target.focus === 'function') target.focus();
   }
 
   function deactivate() {
@@ -106,9 +156,19 @@ function createFocusTrap(container, options = {}) {
     isActive = false;
 
     document.removeEventListener('keydown', handleKeyDown);
+    document.removeEventListener('focusin', handleFocusIn);
 
-    if (returnFocus && previouslyFocused && typeof previouslyFocused.focus === 'function') {
-      previouslyFocused.focus();
+    if (addedTabindex) {
+      container.removeAttribute('tabindex');
+      addedTabindex = false;
+    }
+
+    let returnTarget = null;
+    if (returnFocus === true) returnTarget = previouslyFocused;
+    else if (returnFocus !== false) returnTarget = resolveTarget(returnFocus, document);
+
+    if (returnTarget && typeof returnTarget.focus === 'function') {
+      returnTarget.focus();
     }
   }
 

@@ -19,6 +19,8 @@ Existing solutions like `focus-trap` are powerful but pull in dependencies and p
 - **Zero dependencies**
 - Works with any framework or vanilla JS
 - Handles `Shift+Tab`, `inert`, hidden elements, and dynamic content
+- Catches focus that escapes via **mouse click** or programmatic `focus()`, not just `Tab`
+- Configurable initial / return focus, with a fallback for empty dialogs
 - Returns focus on deactivation (great for modals)
 
 ---
@@ -61,11 +63,23 @@ trap.deactivate();
 
 #### Options
 
-| Option         | Type       | Default | Description                                                   |
-|----------------|------------|---------|---------------------------------------------------------------|
-| `initialFocus` | `boolean`  | `true`  | Auto-focus the first focusable element on `activate()`.       |
-| `returnFocus`  | `boolean`  | `true`  | Return focus to the previously focused element on `deactivate()`. |
-| `onEscape`     | `Function` | `null`  | Callback fired when the `Escape` key is pressed.              |
+| Option          | Type                          | Default | Description                                                                 |
+|-----------------|-------------------------------|---------|-----------------------------------------------------------------------------|
+| `initialFocus`  | `boolean \| FocusTarget`      | `true`  | Where to send focus on `activate()`. `true` = first focusable, `false` = none, or a target. |
+| `returnFocus`   | `boolean \| FocusTarget`      | `true`  | Where to send focus on `deactivate()`. `true` = previously focused element, `false` = none, or a target. |
+| `fallbackFocus` | `FocusTarget`                 | `null`  | Element to focus when the container has no focusable children. Defaults to the container itself. |
+| `onEscape`      | `Function`                    | `null`  | Callback fired when the `Escape` key is pressed.                            |
+
+> A **`FocusTarget`** is a CSS selector string, an `HTMLElement`, or a function returning an element.
+> For `initialFocus`/`fallbackFocus`, selectors resolve **within the container**; for `returnFocus`, they
+> resolve against the **whole document** (since the return target is usually the trigger outside the modal).
+
+```js
+createFocusTrap(modal, {
+  initialFocus: '#email',      // focus a specific field on open
+  returnFocus: triggerButton,  // restore focus to the button that opened it
+});
+```
 
 #### Returns
 
@@ -86,7 +100,7 @@ trap.deactivate();
 - `<details> > <summary>`
 - `<audio controls>`, `<video controls>`
 
-Elements that are `display: none` or inside an `[inert]` container are automatically excluded.
+Elements that are `display: none`, `visibility: hidden`, or inside an `[inert]` container are automatically excluded. If the container has **no** focusable children, focus falls back to the container itself (or your `fallbackFocus` target) so focus is never lost.
 
 ---
 

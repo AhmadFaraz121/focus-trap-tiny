@@ -1,7 +1,11 @@
-import { build } from 'esbuild';
+import { build, initialize } from 'esbuild-wasm';
 import { copyFile, mkdir } from 'node:fs/promises';
 
 await mkdir('dist', { recursive: true });
+
+// esbuild-wasm has no native binary, so it builds identically on Windows,
+// macOS, Linux, and WSL — no platform-specific install step required.
+await initialize({ worker: false });
 
 await build({
   entryPoints: ['src/index.js'],

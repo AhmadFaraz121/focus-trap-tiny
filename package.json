@@ -1,6 +1,6 @@
 {
   "name": "focus-trap-tiny",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A lightweight, zero-dependency focus trap for modals and dialogs. Uses native browser APIs.",
   "type": "module",
   "main": "dist/index.js",
@@ -46,7 +46,7 @@
   },
   "sideEffects": false,
   "devDependencies": {
-    "esbuild": "^0.28.0",
+    "esbuild-wasm": "^0.28.0",
     "jsdom": "^24.0.0"
   }
 }
