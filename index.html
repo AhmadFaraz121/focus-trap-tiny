@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>focus-trap-tiny — Demo</title>
+  <style>
+    :root {
+      --bg: #0f0f11;
+      --surface: #18181c;
+      --surface2: #222228;
+      --border: #2e2e38;
+      --accent: #7c6dfa;
+      --accent-glow: rgba(124, 109, 250, 0.18);
+      --accent-dim: #4e42b0;
+      --text: #e8e8f0;
+      --muted: #888898;
+      --green: #4ade80;
+      --red: #f87171;
+      --radius: 10px;
+      --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* ── Hero ── */
+    header {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 72px 24px 48px;
+      text-align: center;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--accent-glow);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      font-size: 11px;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 100px;
+      margin-bottom: 28px;
+    }
+
+    h1 {
+      font-size: clamp(2.2rem, 5vw, 3.4rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+
+    h1 span {
+      background: linear-gradient(135deg, #7c6dfa 0%, #c084fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      font-size: 1.05rem;
+      color: var(--muted);
+      max-width: 480px;
+      margin: 0 auto 36px;
+    }
+
+    .install-box {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 20px;
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      color: var(--green);
+      cursor: pointer;
+      transition: border-color 0.2s;
+      position: relative;
+    }
+
+    .install-box:hover { border-color: var(--accent); }
+
+    .copy-hint {
+      font-size: 11px;
+      color: var(--muted);
+      font-family: sans-serif;
+    }
+
+    /* ── Stats bar ── */
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 0;
+      max-width: 560px;
+      margin: 32px auto 0;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .stat {
+      flex: 1;
+      padding: 16px 12px;
+      text-align: center;
+      border-right: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .stat:last-child { border-right: none; }
+
+    .stat-val {
+      display: block;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--accent);
+      font-family: var(--font-mono);
+    }
+
+    .stat-label {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-top: 2px;
+    }
+
+    /* ── Main content ── */
+    main {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 0 24px 80px;
+    }
+
+    .section-title {
+      font-size: 0.7rem;
+      font-family: var(--font-mono);
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 16px;
+      margin-top: 56px;
+    }
+
+    /* ── Demo area ── */
+    .demo-area {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+    }
+
+    .demo-desc {
+      font-size: 0.88rem;
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+
+    .demo-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+    .btn-primary:hover { background: var(--accent-dim); }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Modal overlay ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 32px;
+      width: min(440px, calc(100vw - 48px));
+      box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+      animation: pop-in 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes pop-in {
+      from { opacity: 0; transform: scale(0.94) translateY(8px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .modal h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .modal p {
+      font-size: 0.88rem;
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+
+    .modal-form {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    .field input, .field select {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 7px;
+      padding: 9px 12px;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .field input:focus, .field select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .field select option { background: var(--surface2); }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    /* ── Focus indicator overlay ── */
+    .focus-log {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--muted);
+      min-height: 52px;
+      margin-top: 16px;
+    }
+
+    .focus-log .log-label {
+      color: var(--accent);
+      margin-right: 8px;
+    }
+
+    /* ── Code block ── */
+    .code-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      overflow-x: auto;
+    }
+
+    pre {
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      line-height: 1.7;
+      color: var(--text);
+    }
+
+    .kw  { color: #c084fc; }
+    .fn  { color: #7c6dfa; }
+    .str { color: #4ade80; }
+    .cm  { color: #555568; }
+
+    /* ── Feature grid ── */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    .feature {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .feature-icon {
+      font-size: 1.2rem;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .feature h3 {
+      font-size: 0.88rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .feature p {
+      font-size: 0.78rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--surface);
+      border: 1px solid var(--accent);
+      color: var(--text);
+      padding: 10px 20px;
+      border-radius: 100px;
+      font-size: 0.85rem;
+      font-family: var(--font-mono);
+      transition: transform 0.3s cubic-bezier(0.34, 1.4, 0.64, 1);
+      z-index: 200;
+      white-space: nowrap;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* Visible focus outline for demo purposes */
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="badge">⚡ Zero dependencies</div>
+  <h1>focus-trap-<span>lite</span></h1>
+  <p class="subtitle">Trap keyboard focus inside modals and dialogs using only native browser APIs. No polyfills. No bloat.</p>
+
+  <div class="install-box" onclick="copyInstall(this)">
+    <span>npm install focus-trap-tiny</span>
+    <span class="copy-hint">click to copy</span>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <span class="stat-val">&lt; 1KB</span>
+      <span class="stat-label">gzipped</span>
+    </div>
+    <div class="stat">
+      <span class="stat-val">0</span>
+      <span class="stat-label">dependencies</span>
+    </div>
+    <div class="stat">
+      <span class="stat-val">ES2020+</span>
+      <span class="stat-label">target</span>
+    </div>
+    <div class="stat">
+      <span class="stat-val">WCAG</span>
+      <span class="stat-label">compliant</span>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <p class="section-title">// live demo</p>
+  <div class="demo-area">
+    <p class="demo-desc">Open a modal and try pressing <kbd style="background:var(--surface2);border:1px solid var(--border);padding:2px 6px;border-radius:4px;font-family:var(--font-mono);font-size:0.8rem">Tab</kbd> — focus stays trapped inside. Press <kbd style="background:var(--surface2);border:1px solid var(--border);padding:2px 6px;border-radius:4px;font-family:var(--font-mono);font-size:0.8rem">Esc</kbd> or click Close to return focus to the trigger button.</p>
+    <div class="demo-buttons">
+      <button class="btn btn-primary" id="open-modal-btn" onclick="openModal()">Open Modal</button>
+      <button class="btn btn-ghost" tabindex="0">Focusable outside</button>
+      <button class="btn btn-ghost" tabindex="0">Also focusable</button>
+    </div>
+    <div class="focus-log" id="focus-log">
+      <span class="log-label">focus →</span> waiting for interaction...
+    </div>
+  </div>
+
+  <p class="section-title">// usage</p>
+  <div class="code-block">
+    <pre><span class="kw">import</span> <span class="fn">createFocusTrap</span> <span class="kw">from</span> <span class="str">'focus-trap-tiny'</span>;
+
+<span class="kw">const</span> modal = document.<span class="fn">getElementById</span>(<span class="str">'my-modal'</span>);
+<span class="kw">const</span> trap = <span class="fn">createFocusTrap</span>(modal, {
+  onEscape: () => <span class="fn">closeModal</span>(),
+});
+
+<span class="cm">// When modal opens</span>
+trap.<span class="fn">activate</span>();
+
+<span class="cm">// When modal closes</span>
+trap.<span class="fn">deactivate</span>();
+
+<span class="cm">// If DOM changes dynamically</span>
+trap.<span class="fn">update</span>();</pre>
+  </div>
+
+  <p class="section-title">// features</p>
+  <div class="features">
+    <div class="feature">
+      <span class="feature-icon">⌨️</span>
+      <div>
+        <h3>Tab & Shift+Tab</h3>
+        <p>Full bidirectional keyboard cycling through all focusable elements.</p>
+      </div>
+    </div>
+    <div class="feature">
+      <span class="feature-icon">🔙</span>
+      <div>
+        <h3>Return Focus</h3>
+        <p>Automatically restores focus to the trigger element when deactivated.</p>
+      </div>
+    </div>
+    <div class="feature">
+      <span class="feature-icon">🙈</span>
+      <div>
+        <h3>Inert-aware</h3>
+        <p>Skips elements inside <code style="font-family:var(--font-mono);font-size:0.78rem">[inert]</code> containers and hidden elements.</p>
+      </div>
+    </div>
+    <div class="feature">
+      <span class="feature-icon">🔄</span>
+      <div>
+        <h3>Dynamic content</h3>
+        <p>Call <code style="font-family:var(--font-mono);font-size:0.78rem">trap.update()</code> after DOM changes to re-scan focusable elements.</p>
+      </div>
+    </div>
+    <div class="feature">
+      <span class="feature-icon">🚪</span>
+      <div>
+        <h3>Escape callback</h3>
+        <p>Optional <code style="font-family:var(--font-mono);font-size:0.78rem">onEscape</code> hook to wire up your close logic.</p>
+      </div>
+    </div>
+    <div class="feature">
+      <span class="feature-icon">📦</span>
+      <div>
+        <h3>Tree-shakeable</h3>
+        <p>Pure ESM with zero side-effects. Only ships what you import.</p>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal" id="modal">
+    <h2 id="modal-title">🎯 Focus is trapped here</h2>
+    <p>Try pressing Tab — it cycles through the fields below and the buttons at the bottom. Shift+Tab goes backwards. Press Escape to close.</p>
+    <div class="modal-form">
+      <div class="field">
+        <label>Name</label>
+        <input type="text" placeholder="e.g. Ada Lovelace" />
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" placeholder="ada@babbage.dev" />
+      </div>
+      <div class="field">
+        <label>Role</label>
+        <select>
+          <option>Frontend Developer</option>
+          <option>Full-Stack Engineer</option>
+          <option>Accessibility Engineer</option>
+          <option>UI/UX Designer</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Close</button>
+      <button class="btn btn-primary" onclick="closeModal()">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  // ── Inline the library (no build step for demo) ──
+  const FOCUSABLE_SELECTORS = [
+    'a[href]',
+    'button:not([disabled])',
+    'input:not([disabled])',
+    'select:not([disabled])',
+    'textarea:not([disabled])',
+    '[tabindex]:not([tabindex="-1"])',
+    'details > summary',
+  ].join(', ');
+
+  function createFocusTrap(container, options = {}) {
+    const { initialFocus = true, returnFocus = true, onEscape = null } = options;
+    let isActive = false, previouslyFocused = null, focusableElements = [];
+
+    function getFocusableElements() {
+      return Array.from(container.querySelectorAll(FOCUSABLE_SELECTORS)).filter(
+        el => !el.closest('[inert]') && getComputedStyle(el).display !== 'none'
+      );
+    }
+
+    function handleKeyDown(e) {
+      if (!isActive) return;
+      if (e.key === 'Escape' && onEscape) { onEscape(e); return; }
+      if (e.key !== 'Tab') return;
+      focusableElements = getFocusableElements();
+      if (!focusableElements.length) { e.preventDefault(); return; }
+      const first = focusableElements[0], last = focusableElements[focusableElements.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey) {
+        if (active === first || !container.contains(active)) { e.preventDefault(); last.focus(); }
+      } else {
+        if (active === last || !container.contains(active)) { e.preventDefault(); first.focus(); }
+      }
+    }
+
+    return {
+      activate() {
+        if (isActive) return;
+        isActive = true;
+        previouslyFocused = document.activeElement;
+        focusableElements = getFocusableElements();
+        document.addEventListener('keydown', handleKeyDown);
+        if (initialFocus && focusableElements.length) focusableElements[0].focus();
+      },
+      deactivate() {
+        if (!isActive) return;
+        isActive = false;
+        document.removeEventListener('keydown', handleKeyDown);
+        if (returnFocus && previouslyFocused?.focus) previouslyFocused.focus();
+      },
+      update() { focusableElements = getFocusableElements(); }
+    };
+  }
+
+  // ── Demo logic ──
+  const overlay = document.getElementById('modal-overlay');
+  const modal = document.getElementById('modal');
+  const log = document.getElementById('focus-log');
+
+  const trap = createFocusTrap(modal, {
+    onEscape: () => closeModal(),
+  });
+
+  // Focus tracking
+  document.addEventListener('focusin', (e) => {
+    const tag = e.target.tagName.toLowerCase();
+    const id = e.target.id ? `#${e.target.id}` : '';
+    const type = e.target.type ? `[${e.target.type}]` : '';
+    log.innerHTML = `<span class="log-label">focus →</span> &lt;${tag}${id}${type}&gt;`;
+  });
+
+  window.openModal = function() {
+    overlay.classList.add('open');
+    trap.activate();
+  };
+
+  window.closeModal = function() {
+    overlay.classList.remove('open');
+    trap.deactivate();
+  };
+
+  // Copy install command
+  window.copyInstall = function(el) {
+    navigator.clipboard.writeText('npm install focus-trap-tiny').then(() => {
+      showToast('📋 Copied to clipboard!');
+    });
+  };
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+  }
+</script>
+
+</body>
+</html>

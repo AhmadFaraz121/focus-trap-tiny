@@ -1,0 +1,52 @@
+{
+  "name": "focus-trap-tiny",
+  "version": "1.0.0",
+  "description": "A lightweight, zero-dependency focus trap for modals and dialogs. Uses native browser APIs.",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node --test",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "focus",
+    "focus-trap",
+    "accessibility",
+    "a11y",
+    "modal",
+    "dialog",
+    "keyboard",
+    "wcag",
+    "trap"
+  ],
+  "author": "Ahmed Faraz",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AhmadFaraz121/focus-trap-tiny.git"
+  },
+  "homepage": "https://github.com/AhmadFaraz121/focus-trap-tiny#readme",
+  "bugs": {
+    "url": "https://github.com/AhmadFaraz121/focus-trap-tiny/issues"
+  },
+  "sideEffects": false,
+  "devDependencies": {
+    "esbuild": "^0.28.0",
+    "jsdom": "^24.0.0"
+  }
+}
